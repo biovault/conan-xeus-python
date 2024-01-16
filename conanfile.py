@@ -51,6 +51,7 @@ class XeusZmqConan(ConanFile):
         ## for CMP0091 policy set xeus CMake version to at least 3.15
         xeuspythoncmake = os.path.join(self.source_folder, "xeus-python", "CMakeLists.txt")
         tools.replace_in_file(xeuspythoncmake, "cmake_minimum_required(VERSION 3.4.3)", "cmake_minimum_required(VERSION 3.21)")
+        tools.replace_in_file(xeuspythoncmake, "find_package(PythonInterp ${PythonLibsNew_FIND_VERSION} REQUIRED", "find_package(Python ${PythonLibsNew_FIND_VERSION} COMPONENTS Interpreter Development REQUIRED")
         broken_export = '''if (XPYT_BUILD_SHARED)
     install(EXPORT ${PROJECT_NAME}-targets
             FILE ${PROJECT_NAME}Targets.cmake
@@ -101,6 +102,8 @@ endif ()'''
             prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = prefix_path
 
+        tc.variables["PythonLibsNew_FIND_VERSION"] = "3.11"
+
         xeuspath = Path(self.deps_cpp_info["xeus"].rootpath).as_posix()
         tc.variables["xeus_ROOT"] = xeuspath
         print(f"********xeus_root: {xeuspath}**********")
@@ -116,6 +119,10 @@ endif ()'''
         tc.variables["pybind11_ROOT"] = pybindpath
         pybindpath = Path(self.deps_cpp_info["pybind11_json"].rootpath).as_posix()
         tc.variables["pybind11_json_ROOT"] = pybindpath
+
+
+        # Build the test executable for reference
+        tc.variables["XPYT_BUILD_XPYTHON_EXECUTABLE"] = "ON"
         return tc
     
     def configure(self):
@@ -175,11 +182,11 @@ include_directories(
         # Build both release and debug for dual packaging
         cmake_release = self._configure_cmake()
         try:
-            cmake_release.build(build_type="Release")
+            cmake_release.build(cli_args=["--verbose"])
         except ConanException as e:
             print(f"Exception: {e} from cmake invocation: \n Completing release build")
         try:
-            cmake_release.install(build_type="Release")
+            cmake_release.install()
         except ConanException as e:
             print(f"Exception: {e} from cmake invocation: \n Completing release install")
 
@@ -205,18 +212,22 @@ include_directories(
         self.cpp_info.set_property("cmake_config_file", True)
 
     def _pkg_bin(self, build_type):
-        src_dir = f"{self.build_folder}/lib/{build_type}"
+        src_dir = f"{self.build_folder}/{build_type}"
         dst_lib = f"lib/{build_type}"
         dst_bin = f"bin/{build_type}"
 
+        self.copy("*.exe", src=src_dir, dst=dst_bin, keep_path=False)
         self.copy("*.dll", src=src_dir, dst=dst_bin, keep_path=False)
         self.copy("*.so", src=src_dir, dst=dst_lib, keep_path=False)
         self.copy("*.dylib", src=src_dir, dst=dst_lib, keep_path=False)
         self.copy("*.a", src=src_dir, dst=dst_lib, keep_path=False)
+        self.copy("*.lib", src=src_dir, dst=dst_lib, keep_path=False)
+        print(f"Build type {build_type}")
         if ((build_type == "Debug") or (build_type == "RelWithDebInfo")) and (
             self.settings.compiler == "Visual Studio"
         ):
             # the debug info
+            print("Adding pdb files for Windows debug")
             self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
 
     def package(self):
