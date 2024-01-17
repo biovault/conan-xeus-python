@@ -52,11 +52,15 @@ class XeusZmqConan(ConanFile):
         xeuspythoncmake = os.path.join(self.source_folder, "xeus-python", "CMakeLists.txt")
         tools.replace_in_file(xeuspythoncmake, "cmake_minimum_required(VERSION 3.4.3)", "cmake_minimum_required(VERSION 3.21)")
         tools.replace_in_file(xeuspythoncmake, "find_package(PythonInterp ${PythonLibsNew_FIND_VERSION} REQUIRED", "find_package(Python ${PythonLibsNew_FIND_VERSION} COMPONENTS Interpreter Development REQUIRED")
-        broken_export = '''if (XPYT_BUILD_SHARED)
-    install(EXPORT ${PROJECT_NAME}-targets
-            FILE ${PROJECT_NAME}Targets.cmake
-            DESTINATION ${XEUS_PYTHON_CMAKECONFIG_INSTALL_DIR})
-endif ()'''
+        tools.replace_in_file(xeuspythoncmake, "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}", "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
+        tools.replace_in_file(xeuspythoncmake, "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}", "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
+        tools.replace_in_file(xeuspythoncmake, "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}", "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>")
+
+        #        broken_export = '''if (XPYT_BUILD_SHARED)
+        #     install(EXPORT ${PROJECT_NAME}-targets
+        #             FILE ${PROJECT_NAME}Targets.cmake
+        #             DESTINATION ${XEUS_PYTHON_CMAKECONFIG_INSTALL_DIR})
+        # endif ()'''
         #tools.replace_in_file(xeuspythoncmake, broken_export, "")
         # Match the name of the xeus link target with the package
         #tools.replace_in_file(os.path.join(self.source_folder, "xeus-zmq", "CMakeLists.txt"), "set(XEUS_TARGET_NAME xeus-static)", "set(XEUS_TARGET_NAME libxeus-static)")
