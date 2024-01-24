@@ -11,6 +11,9 @@ required_conan_version = ">=1.60.0"
 
 
 class XeusZmqConan(ConanFile):
+    python_requires = "bundleutils/0.1@lkeb/stable"
+    python_requires_extend = "bundleutils.BundleUtils"
+
     name = "xeus-python"
     version = "0.15.12"
     license = "MIT"
@@ -38,6 +41,11 @@ class XeusZmqConan(ConanFile):
         "pybind11_json/0.2.11"
     )
 
+    def init(self):
+        # use the buntilutils to record the 
+        # original source directory
+        self._save_git_path()
+
     def source(self):
         try:
             self.run(f"git clone {self.url}")
@@ -55,19 +63,6 @@ class XeusZmqConan(ConanFile):
         tools.replace_in_file(xeuspythoncmake, "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}", "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}", "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}", "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>")
-
-        #        broken_export = '''if (XPYT_BUILD_SHARED)
-        #     install(EXPORT ${PROJECT_NAME}-targets
-        #             FILE ${PROJECT_NAME}Targets.cmake
-        #             DESTINATION ${XEUS_PYTHON_CMAKECONFIG_INSTALL_DIR})
-        # endif ()'''
-        #tools.replace_in_file(xeuspythoncmake, broken_export, "")
-        # Match the name of the xeus link target with the package
-        #tools.replace_in_file(os.path.join(self.source_folder, "xeus-zmq", "CMakeLists.txt"), "set(XEUS_TARGET_NAME xeus-static)", "set(XEUS_TARGET_NAME libxeus-static)")
-        #tools.replace_in_file(os.path.join(self.source_folder, "xeus-zmq", "CMakeLists.txt"), "set(XEUS_TARGET_NAME xeus)", "set(XEUS_TARGET_NAME xeus::xeus)")
-        #tools.replace_in_file(xeuszmqcmake, "find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)", "find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)\n message(\"xeus found ${xeus_FOUND} - inc ${xeus_INCLUDE_DIRS} libs ${xeus_LIBRARY} & ${xeus_STATIC_LIBRARY} \")")
-        #tools.replace_in_file(xeuszmqcmake, "find_package(cppzmq ${cppzmq_REQUIRED_VERSION} REQUIRED)", "find_package(cppzmq ${cppzmq_REQUIRED_VERSION} REQUIRED) \n message(\"cppzmq found ${cppzmq_FOUND} - inc ${cppzmq_INCLUDE_DIRS} libs ${cppzmq_LIBRARY} & ${cppzmq_STATIC_LIBRARY} \")")
-        #tools.replace_in_file(xeuszmqcmake, "\"${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}\" CACHE STRING \"install path for xeus-zmqConfig.cmake\")", "\"lib/cmake/${PROJECT_NAME}\" CACHE STRING \"install path for xeus-zmqConfig.cmake\")")
         os.chdir("..")
 
     def _get_tc(self):
@@ -182,7 +177,7 @@ include_directories(
         return cmake
 
     def build(self):
-        
+        self._save_package_id()
         # Build both release and debug for dual packaging
         cmake_release = self._configure_cmake()
         try:
@@ -194,17 +189,8 @@ include_directories(
         except ConanException as e:
             print(f"Exception: {e} from cmake invocation: \n Completing release install")
 
-        # cmake_debug = self._configure_cmake()
-        # try:
-        #     cmake_debug.build(build_type="Debug")
-        # except ConanException as e:
-        #     print(f"Exception: {e} from cmake invocation: \n Completing dbg build")
-        # try:
-        #     cmake_debug.install(build_type="Debug")
-        # except ConanException as e:
-        #     print(f"Exception: {e} from cmake invocation: \n Completing dbg install")
 
-    # This is to make combined packages - for this wer make separate Debug and Release
+    # This is to make combined packages 
     #def package_id(self):
     #    del self.info.settings.build_type
     #    if self.settings.compiler == "Visual Studio":
@@ -245,3 +231,6 @@ include_directories(
         self.copy("*.hpp", src="xeus-python/src/cpp", dst="include", keep_path=True)
 
         self._pkg_bin(self.settings.build_type)
+
+        # This allow the merging op multiple build_types into a single package
+        self._merge_packages()
