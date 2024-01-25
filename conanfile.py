@@ -22,8 +22,8 @@ class XeusZmqConan(ConanFile):
     description = """xeus-python is a Jupyter kernel for Python based on the native implementation of the Jupyter protocol xeus."""
     topics = ("python", "jupyter", "python", "xeus")
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "testing": [True, False]}
-    default_options = {"shared": True, "testing": False}
+    options = {"shared": [True, False], "testing": [True, False], 'merge_package': [True, False]}
+    default_options = {"shared": True, "testing": False, 'merge_package': False}
     generators = "CMakeDeps"
     exports = "cmake/*"
 
