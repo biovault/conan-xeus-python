@@ -33,8 +33,6 @@ class XeusZmqConan(ConanFile):
     # as submodules of this repo.
     requires = (
         "nlohmann_json/3.11.3",  # resolve conflict between pybind11_json & xeus-xmq by overriding
-        "cppzmq/4.10.0",
-        "zeromq/4.3.5",
         "xtl/0.7.5",
         "xeus-zmq/1.1.1@lkeb/stable",
         "pybind11/2.11.1",
@@ -63,6 +61,23 @@ class XeusZmqConan(ConanFile):
         tools.replace_in_file(xeuspythoncmake, "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}", "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}", "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}", "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>")
+        # force linking with release also in debug
+        tools.replace_in_file(xeuspythoncmake, "target_link_libraries(${target_name} PRIVATE ${PYTHON_LIBRARIES})", "target_link_libraries(${target_name} PRIVATE ${Python_LIBRARY_RELEASE})")
+        install_text = """
+add_dependencies(xpython xeus-python-static xeus-python)
+
+add_custom_command(TARGET xpython POST_BUILD
+    COMMAND "${CMAKE_COMMAND}"
+    --install ${CMAKE_CURRENT_BINARY_DIR}
+    --config $<CONFIG>
+    --prefix ${CMAKE_CURRENT_BINARY_DIR}/install/$<CONFIG>
+)
+
+
+"""
+        with open(xeuspythoncmake, "a") as cmakefile:
+            cmakefile.write(install_text)
+
         os.chdir("..")
 
     def _get_tc(self):
@@ -109,11 +124,11 @@ class XeusZmqConan(ConanFile):
         xeuszmqpath = Path(self.deps_cpp_info["xeus-zmq"].rootpath).as_posix()
         tc.variables["xeus-zmq_ROOT"] = xeuszmqpath
         print(f"********xeus-zmq_root: {xeuszmqpath}**********")
-        zeromqpath = Path(self.deps_cpp_info["zeromq"].rootpath).as_posix()
-        print(f"********zeromq_path: {zeromqpath}**********")
-        tc.variables["zeromq_ROOT"] = zeromqpath
-        cppzmqpath = Path(Path(self.deps_cpp_info["cppzmq"].rootpath), 'lib', 'cmake').as_posix()
-        tc.variables["cppzmq_ROOT"] = cppzmqpath
+        # zeromqpath = Path(self.deps_cpp_info["zeromq"].rootpath).as_posix()
+        # print(f"********zeromq_path: {zeromqpath}**********")
+        # tc.variables["zeromq_ROOT"] = zeromqpath
+        # cppzmqpath = Path(Path(self.deps_cpp_info["cppzmq"].rootpath), 'lib', 'cmake').as_posix()
+        # tc.variables["cppzmq_ROOT"] = cppzmqpath
         pybindpath = Path(self.deps_cpp_info["pybind11"].rootpath).as_posix()
         tc.variables["pybind11_ROOT"] = pybindpath
         pybindpath = Path(self.deps_cpp_info["pybind11_json"].rootpath).as_posix()
@@ -131,8 +146,8 @@ class XeusZmqConan(ConanFile):
     #def layout(self):
         # Cause the libs and bin to be output to separate subdirs
         # based on build configuration.
-    #    self.cpp.package.libdirs = ["lib/$<CONFIG>"]
-    #    self.cpp.package.bindirs = ["bin/$<CONFIG>"]
+        self.cpp.package.libdirs = ["lib"]
+        self.cpp.package.bindirs = ["bin"]
 
     def system_requirements(self):
         if self.settings.os == "Macos":
@@ -148,14 +163,13 @@ class XeusZmqConan(ConanFile):
         deps.generate()
         tc = self._get_tc()
         tc.generate()
-
+        #  {Path(self.deps_cpp_info['cppzmq'].rootpath, 'include').as_posix()}
+        #  {Path(self.deps_cpp_info['zeromq'].rootpath, 'include').as_posix()}
         with open("conan_toolchain.cmake", "a") as toolchain:
             toolchain.write(
                 fr"""
 include_directories(
     {Path(self.deps_cpp_info['nlohmann_json'].rootpath, 'include').as_posix()}
-    {Path(self.deps_cpp_info['cppzmq'].rootpath, 'include').as_posix()}
-    {Path(self.deps_cpp_info['zeromq'].rootpath, 'include').as_posix()}
     {Path(self.deps_cpp_info['xeus'].rootpath, 'include').as_posix()}
     {Path(self.deps_cpp_info['xtl'].rootpath, 'include').as_posix()}
     {Path(self.deps_cpp_info['pybind11'].rootpath, 'include').as_posix()}
@@ -179,16 +193,19 @@ include_directories(
     def build(self):
         self._save_package_id()
         # Build both release and debug for dual packaging
-        cmake_release = self._configure_cmake()
-        try:
-            cmake_release.build(cli_args=["--verbose"])
-        except ConanException as e:
-            print(f"Exception: {e} from cmake invocation: \n Completing release build")
-        try:
-            cmake_release.install()
-        except ConanException as e:
-            print(f"Exception: {e} from cmake invocation: \n Completing release install")
+        # cmake_release = self._configure_cmake()
+        # cmake_release.build(cli_args=["--verbose"])
+        # cmake_release.install()
 
+        cmake = self._configure_cmake()
+
+        cmake.build(build_type="Debug")
+        cmake.install(build_type="Debug")
+
+        cmake = self._configure_cmake()
+
+        cmake.build(build_type="Release")
+        cmake.install(build_type="Release")
 
     # This is to make combined packages 
     #def package_id(self):
@@ -233,4 +250,6 @@ include_directories(
         self._pkg_bin(self.settings.build_type)
 
         # This allow the merging op multiple build_types into a single package
+        self._merge_from = ["Debug"]
+        self._merge_to = "Release" 
         self._merge_packages()
