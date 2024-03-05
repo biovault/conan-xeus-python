@@ -124,6 +124,9 @@ add_custom_command(TARGET xpython POST_BUILD
         xeuszmqpath = Path(self.deps_cpp_info["xeus-zmq"].rootpath).as_posix()
         tc.variables["xeus-zmq_ROOT"] = xeuszmqpath
         print(f"********xeus-zmq_root: {xeuszmqpath}**********")
+        zeromqpath = Path(xeuszmqpath, "CMake")
+        print(f"********zeromq_path: {zeromqpath}**********")
+        tc.variables["ZeroMQ_ROOT"] = zeromqpath.as_posix()
         # zeromqpath = Path(self.deps_cpp_info["zeromq"].rootpath).as_posix()
         # print(f"********zeromq_path: {zeromqpath}**********")
         # tc.variables["zeromq_ROOT"] = zeromqpath
