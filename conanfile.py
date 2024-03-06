@@ -65,15 +65,6 @@ class XeusZmqConan(ConanFile):
         tools.replace_in_file(xeuspythoncmake, "target_link_libraries(${target_name} PRIVATE ${PYTHON_LIBRARIES})", "target_link_libraries(${target_name} PRIVATE ${Python_LIBRARY_RELEASE})")
         install_text = """
 add_dependencies(xpython xeus-python-static xeus-python)
-
-add_custom_command(TARGET xpython POST_BUILD
-    COMMAND "${CMAKE_COMMAND}"
-    --install ${CMAKE_CURRENT_BINARY_DIR}
-    --config $<CONFIG>
-    --prefix ${CMAKE_CURRENT_BINARY_DIR}/install/$<CONFIG>
-)
-
-
 """
         with open(xeuspythoncmake, "a") as cmakefile:
             cmakefile.write(install_text)
@@ -124,14 +115,7 @@ add_custom_command(TARGET xpython POST_BUILD
         xeuszmqpath = Path(self.deps_cpp_info["xeus-zmq"].rootpath).as_posix()
         tc.variables["xeus-zmq_ROOT"] = xeuszmqpath
         print(f"********xeus-zmq_root: {xeuszmqpath}**********")
-        zeromqpath = Path(xeuszmqpath, "CMake")
-        print(f"********zeromq_path: {zeromqpath}**********")
-        tc.variables["ZeroMQ_ROOT"] = zeromqpath.as_posix()
-        # zeromqpath = Path(self.deps_cpp_info["zeromq"].rootpath).as_posix()
-        # print(f"********zeromq_path: {zeromqpath}**********")
-        # tc.variables["zeromq_ROOT"] = zeromqpath
-        # cppzmqpath = Path(Path(self.deps_cpp_info["cppzmq"].rootpath), 'lib', 'cmake').as_posix()
-        # tc.variables["cppzmq_ROOT"] = cppzmqpath
+        tc.variables["ZeroMQ_DIR"] = Path(xeuszmqpath, 'lib', 'cmake', 'ZeroMQ').as_posix()
         pybindpath = Path(self.deps_cpp_info["pybind11"].rootpath).as_posix()
         tc.variables["pybind11_ROOT"] = pybindpath
         pybindpath = Path(self.deps_cpp_info["pybind11_json"].rootpath).as_posix()
@@ -250,9 +234,3 @@ include_directories(
         self.copy("*.h", src="xeus-python/src/cpp", dst="include", keep_path=True)
         self.copy("*.hpp", src="xeus-python/src/cpp", dst="include", keep_path=True)
 
-        self._pkg_bin(self.settings.build_type)
-
-        # This allow the merging op multiple build_types into a single package
-        self._merge_from = ["Debug"]
-        self._merge_to = "Release" 
-        self._merge_packages()
