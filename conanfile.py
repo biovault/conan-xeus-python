@@ -115,7 +115,7 @@ add_dependencies(xpython xeus-python-static xeus-python)
         xeuszmqpath = Path(self.deps_cpp_info["xeus-zmq"].rootpath).as_posix()
         tc.variables["xeus-zmq_ROOT"] = xeuszmqpath
         print(f"********xeus-zmq_root: {xeuszmqpath}**********")
-        tc.variables["ZeroMQ_DIR"] = Path(xeuszmqpath, 'lib', 'cmake', 'ZeroMQ').as_posix()
+        tc.variables["ZeroMQ_DIR"] = Path(xeuszmqpath, 'lib', 'cmake', 'libzmq').as_posix()
         pybindpath = Path(self.deps_cpp_info["pybind11"].rootpath).as_posix()
         tc.variables["pybind11_ROOT"] = pybindpath
         pybindpath = Path(self.deps_cpp_info["pybind11_json"].rootpath).as_posix()
