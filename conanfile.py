@@ -61,6 +61,11 @@ class XeusZmqConan(ConanFile):
         tools.replace_in_file(xeuspythoncmake, "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}", "ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}", "LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>")
         tools.replace_in_file(xeuspythoncmake, "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}", "RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>")
+        # Update some dependencies
+        tools.replace_in_file(xeuspythoncmake, "set(xtl_REQUIRED_VERSION 0.7.0)", "set(xtl_REQUIRED_VERSION 0.7.5)")
+        tools.replace_in_file(xeuspythoncmake, "set(pybind11_REQUIRED_VERSION 2.6.1)", "set(pybind11_REQUIRED_VERSION 2.11.1)")
+        tools.replace_in_file(xeuspythoncmake, "set(pybind11_json_REQUIRED_VERSION 0.2.8)", "set(pybind11_json_REQUIRED_VERSION 0.2.11)")
+        tools.replace_in_file(xeuspythoncmake, "set(xeus-zmq_REQUIRED_VERSION 1.0.1)", "set(xeus-zmq_REQUIRED_VERSION 1.1.1)")
         # force linking with release also in debug
         tools.replace_in_file(xeuspythoncmake, "target_link_libraries(${target_name} PRIVATE ${PYTHON_LIBRARIES})", "target_link_libraries(${target_name} PRIVATE ${Python_LIBRARY_RELEASE})")
         install_text = """
@@ -96,9 +101,6 @@ add_dependencies(xpython xeus-python-static xeus-python)
         tc.variables["BUILD_SHARED_LIBS"] = "ON" if self.options.shared else "OFF"
         tc.variables["CMAKE_PREFIX_PATH"] = Path(self.build_folder).as_posix()
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
-        tc.variables["xtl_REQUIRED_VERSION "] = "0.7.5"
-        tc.variables["pybind11_REQUIRED_VERSION"] = "2.11.1"
-        tc.variables["pybind11_REQUIRED_VERSION"] = "0.2.11"
 
         if self.settings.os == "Linux":
             tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release;RelWithDebInfo"
