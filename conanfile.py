@@ -96,6 +96,9 @@ add_dependencies(xpython xeus-python-static xeus-python)
         tc.variables["BUILD_SHARED_LIBS"] = "ON" if self.options.shared else "OFF"
         tc.variables["CMAKE_PREFIX_PATH"] = Path(self.build_folder).as_posix()
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
+        tc.variables["xtl_REQUIRED_VERSION "] = "0.7.5"
+        tc.variables["pybind11_REQUIRED_VERSION"] = "2.11.1"
+        tc.variables["pybind11_REQUIRED_VERSION"] = "0.2.11"
 
         if self.settings.os == "Linux":
             tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release;RelWithDebInfo"
