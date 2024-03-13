@@ -64,8 +64,8 @@ jobs:
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
           brew install libomp
 
-      - name: Setup python version
-        uses: actions/setup-python@v1
+      - name: Setup python version 
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
